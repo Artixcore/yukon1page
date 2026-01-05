@@ -6,7 +6,17 @@ This guide explains how to deploy the Yukon Lifestyle Laravel application using 
 
 ### Prerequisites
 - Docker Engine 20.10+
-- Docker Compose 2.0+
+- Docker Compose 2.0+ (or standalone docker-compose)
+
+**If docker-compose is not installed, run:**
+```bash
+# Option 1: Install standalone docker-compose
+sudo chmod +x install-docker-compose.sh
+sudo ./install-docker-compose.sh
+
+# Option 2: Use docker compose (plugin) - if Docker Compose plugin is installed
+# Use 'docker compose' instead of 'docker-compose' in all commands
+```
 
 ### Quick Start
 
@@ -66,21 +76,28 @@ This guide explains how to deploy the Yukon Lifestyle Laravel application using 
 
 ### Useful Docker Commands
 
+**Note:** If you have Docker Compose plugin installed, use `docker compose` (without hyphen) instead of `docker-compose`.
+
 ```bash
 # View logs
 docker-compose logs -f
+# OR: docker compose logs -f
 
 # Stop containers
 docker-compose down
+# OR: docker compose down
 
 # Restart containers
 docker-compose restart
+# OR: docker compose restart
 
 # Execute commands in container
 docker-compose exec app php artisan <command>
+# OR: docker compose exec app php artisan <command>
 
 # Access MySQL
 docker-compose exec db mysql -u root -p
+# OR: docker compose exec db mysql -u root -p
 ```
 
 ## Option 2: Using setup.sh (Bare Metal Ubuntu 22.04)
