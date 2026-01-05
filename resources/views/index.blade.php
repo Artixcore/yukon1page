@@ -127,29 +127,64 @@
                 </div>
             </div>
             <div class="row g-4">
-                <div class="col-6 col-md-4 col-lg-3">
+                <div class="col-12 col-md-6 col-lg-4">
                     <div class="review-card">
-                        <img src="{{ asset('assets/images/reviews/r1.jpeg') }}" alt="Customer Review 1" class="img-fluid review-image" loading="lazy" onerror="this.style.display='none';">
+                        <div class="review-content">
+                            <div class="review-stars">⭐⭐⭐⭐⭐</div>
+                            <p class="review-text">"পণ্যের মান খুবই ভালো। কাপড় খুব নরম এবং আরামদায়ক। ডেলিভারি সময়মতো পেয়েছি। সবাইকে রিকমেন্ড করব।"</p>
+                            <div class="review-author">
+                                <strong class="review-name">রহিম উদ্দিন</strong>
+                                <span class="review-location">ঢাকা, বাংলাদেশ</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-6 col-md-4 col-lg-3">
+                <div class="col-12 col-md-6 col-lg-4">
                     <div class="review-card">
-                        <img src="{{ asset('assets/images/reviews/r2.jpeg') }}" alt="Customer Review 2" class="img-fluid review-image" loading="lazy" onerror="this.style.display='none';">
+                        <div class="review-content">
+                            <div class="review-stars">⭐⭐⭐⭐⭐</div>
+                            <p class="review-text">"অসাধারণ সেবা! পণ্য হাতে পেয়ে দেখেছি, মান অনেক ভালো। দামও খুবই যুক্তিসঙ্গত। পরবর্তীতে আবার অর্ডার করব।"</p>
+                            <div class="review-author">
+                                <strong class="review-name">ফাতেমা খাতুন</strong>
+                                <span class="review-location">চট্টগ্রাম, বাংলাদেশ</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-6 col-md-4 col-lg-3">
+                <div class="col-12 col-md-6 col-lg-4">
                     <div class="review-card">
-                        <img src="{{ asset('assets/images/reviews/r3.jpeg') }}" alt="Customer Review 3" class="img-fluid review-image" loading="lazy" onerror="this.style.display='none';">
+                        <div class="review-content">
+                            <div class="review-stars">⭐⭐⭐⭐⭐</div>
+                            <p class="review-text">"কাস্টমার সার্ভিস খুব ভালো। তারা সবকিছু বুঝিয়ে দিয়েছে। পণ্য পেয়ে খুব খুশি। কাপড়ের মান দেখে মনে হচ্ছে দামের চেয়ে বেশি পেয়েছি।"</p>
+                            <div class="review-author">
+                                <strong class="review-name">করিম হাসান</strong>
+                                <span class="review-location">সিলেট, বাংলাদেশ</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-6 col-md-4 col-lg-3">
+                <div class="col-12 col-md-6 col-lg-4">
                     <div class="review-card">
-                        <img src="{{ asset('assets/images/reviews/r4.jpeg') }}" alt="Customer Review 4" class="img-fluid review-image" loading="lazy" onerror="this.style.display='none';">
+                        <div class="review-content">
+                            <div class="review-stars">⭐⭐⭐⭐⭐</div>
+                            <p class="review-text">"প্রোডাক্ট খুবই ভালো। কাপড় মোটা এবং টেকসই। ডিজাইনও সুন্দর। পরিবারের সবাই খুশি। নিঃসন্দেহে ভালো পণ্য।"</p>
+                            <div class="review-author">
+                                <strong class="review-name">আয়েশা বেগম</strong>
+                                <span class="review-location">রাজশাহী, বাংলাদেশ</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-6 col-md-4 col-lg-3">
+                <div class="col-12 col-md-6 col-lg-4">
                     <div class="review-card">
-                        <img src="{{ asset('assets/images/reviews/r5.jpeg') }}" alt="Customer Review 5" class="img-fluid review-image" loading="lazy" onerror="this.style.display='none';">
+                        <div class="review-content">
+                            <div class="review-stars">⭐⭐⭐⭐⭐</div>
+                            <p class="review-text">"অর্ডার করার পর খুব দ্রুত পেয়েছি। পণ্যের মান দেখে খুবই সন্তুষ্ট। দামও কম। সবাইকে বলব এই দোকান থেকে কেনার জন্য।"</p>
+                            <div class="review-author">
+                                <strong class="review-name">মোঃ আলী</strong>
+                                <span class="review-location">খুলনা, বাংলাদেশ</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -338,7 +373,26 @@
                             <p class="privacy-text small">
                                 Your personal data will be used to process your order, support your experience throughout this website, and for other purposes described in our <a href="#" class="privacy-link">privacy policy</a>.
                             </p>
-                            <button type="submit" form="checkoutForm" class="btn btn-place-order w-100">
+                            
+                            @if(config('turnstile.site_key'))
+                            <!-- Cloudflare Turnstile CAPTCHA -->
+                            <div class="mb-3 d-flex justify-content-center">
+                                <div class="cf-turnstile" 
+                                     data-sitekey="{{ config('turnstile.site_key') }}"
+                                     data-theme="{{ config('turnstile.theme', 'light') }}"
+                                     data-size="{{ config('turnstile.size', 'normal') }}"
+                                     data-language="{{ config('turnstile.language', 'auto') }}"
+                                     data-callback="onTurnstileSuccess"
+                                     data-error-callback="onTurnstileError"
+                                     data-expired-callback="onTurnstileExpired"
+                                     id="turnstile-widget"></div>
+                            </div>
+                            <div id="turnstile-error" class="alert alert-danger" style="display: none; margin-bottom: 15px;">
+                                <small id="turnstile-error-text">অনুগ্রহ করে CAPTCHA সম্পন্ন করুন</small>
+                            </div>
+                            @endif
+                            
+                            <button type="submit" form="checkoutForm" class="btn btn-place-order w-100" id="submitOrderBtn">
                                 <span class="lock-icon">🔒</span> Place Order <span id="placeOrderTotal">0৳</span>
                             </button>
                         </div>

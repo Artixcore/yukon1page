@@ -45,8 +45,8 @@
     
     <!-- Facebook Pixel Code -->
     @php
-        $pixelId = 'YOUR_PIXEL_ID'; // Replace with actual Pixel ID when ready
-        $pixelConfigured = $pixelId !== 'YOUR_PIXEL_ID' && !empty($pixelId);
+        $pixelId = config('meta.pixel_id');
+        $pixelConfigured = !empty($pixelId) && $pixelId !== 'YOUR_PIXEL_ID';
     @endphp
     @if($pixelConfigured)
     <script>
@@ -161,6 +161,7 @@
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ms-auto">
+                   
                         <li class="nav-item">
                             <a class="nav-link" href="#home">হোম</a>
                         </li>
@@ -200,6 +201,7 @@
                 <div class="col-12">
                     <nav class="footer-nav">
                         <a href="#" class="footer-nav-link">HOME</a>
+                        <a href="{{route('admin.login')}}" class="footer-nav-link">Admin</a>
                         <a href="#" class="footer-nav-link">FACEBOOK</a>
                         <a href="#" class="footer-nav-link">SHOP</a>
                         <a href="#" class="footer-nav-link">LANDING PAGE</a>
@@ -215,6 +217,11 @@
     
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Cloudflare Turnstile -->
+    @if(config('turnstile.site_key'))
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
+    @endif
     
     <!-- Custom JavaScript -->
     <script src="{{ asset('assets/js/main.js') }}"></script>

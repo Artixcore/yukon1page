@@ -49,6 +49,122 @@
     const DELIVERY_CHARGE = 100; // Delivery charge for single pic
 
     /**
+     * Cloudflare Turnstile Callbacks
+     */
+    window.onTurnstileSuccess = function(token) {
+        // Hide any error messages when CAPTCHA succeeds
+        const captchaError = document.getElementById('turnstile-error');
+        if (captchaError) {
+            captchaError.style.display = 'none';
+        }
+        console.log('Turnstile verified successfully');
+    };
+
+    window.onTurnstileError = function(error) {
+        console.error('Turnstile error:', error);
+        const captchaError = document.getElementById('turnstile-error');
+        const errorText = document.getElementById('turnstile-error-text');
+        if (captchaError && errorText) {
+            // Error 110200 usually means invalid site key or domain mismatch
+            if (error && error.includes('110200')) {
+                errorText.textContent = 'CAPTCHA কনফিগারেশন ত্রুটি। অনুগ্রহ করে সাইট প্রশাসকের সাথে যোগাযোগ করুন।';
+            } else {
+                errorText.textContent = 'CAPTCHA লোড করতে সমস্যা হয়েছে। পৃষ্ঠাটি রিফ্রেশ করুন।';
+            }
+            captchaError.style.display = 'block';
+        }
+    };
+
+    window.onTurnstileExpired = function() {
+        console.log('Turnstile token expired');
+        const captchaError = document.getElementById('turnstile-error');
+        const errorText = document.getElementById('turnstile-error-text');
+        if (captchaError && errorText) {
+            errorText.textContent = 'CAPTCHA সময় শেষ হয়ে গেছে। অনুগ্রহ করে আবার চেষ্টা করুন।';
+            captchaError.style.display = 'block';
+        }
+        
+        // Reset the widget
+        const turnstileWidget = document.getElementById('turnstile-widget');
+        if (turnstileWidget && typeof turnstile !== 'undefined') {
+            try {
+                turnstile.reset(turnstileWidget);
+            } catch (e) {
+                console.error('Failed to reset Turnstile:', e);
+            }
+        }
+    };
+
+    /**
+     * Initialize Turnstile widget when script loads
+     */
+    function initializeTurnstile() {
+        const turnstileWidget = document.getElementById('turnstile-widget');
+        if (!turnstileWidget) return;
+
+        // Wait for Turnstile script to load
+        if (typeof turnstile === 'undefined') {
+            // Retry after a short delay
+            setTimeout(initializeTurnstile, 100);
+            return;
+        }
+
+        // Widget should auto-render, but we can verify it's loaded
+        console.log('Turnstile script loaded');
+    }
+
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeTurnstile);
+    } else {
+        initializeTurnstile();
+    }
+
+    /**
+     * Play Notification Sound
+     */
+    function playNotificationSound() {
+        try {
+            // Try to play custom sound file first
+            const audio = new Audio('/sounds/notification.mp3');
+            audio.volume = 0.5; // Set volume to 50%
+            audio.play().catch(function(error) {
+                // If custom sound fails, use browser beep
+                console.log('Custom sound failed, using fallback beep');
+                playBeepSound();
+            });
+        } catch (error) {
+            // Fallback to beep if audio file doesn't exist
+            playBeepSound();
+        }
+    }
+
+    /**
+     * Play Beep Sound (Fallback)
+     */
+    function playBeepSound() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800; // Frequency in Hz
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        } catch (error) {
+            console.log('Sound notification not available:', error);
+        }
+    }
+
+    /**
      * SweetAlert2 Helper Functions
      */
     
@@ -436,6 +552,49 @@
                         let laravelSuccess = false;
                         let laravelError = null;
                         try {
+                            // Get CAPTCHA token if Turnstile is enabled
+                            let captchaToken = null;
+                            const turnstileWidget = document.getElementById('turnstile-widget');
+                            if (turnstileWidget) {
+                                // Check if Turnstile script is loaded
+                                if (typeof turnstile === 'undefined') {
+                                    const captchaError = document.getElementById('turnstile-error');
+                                    const errorText = document.getElementById('turnstile-error-text');
+                                    if (captchaError && errorText) {
+                                        errorText.textContent = 'CAPTCHA লোড হচ্ছে... অনুগ্রহ করে অপেক্ষা করুন।';
+                                        captchaError.style.display = 'block';
+                                    }
+                                    throw new Error('CAPTCHA script not loaded');
+                                }
+                                
+                                try {
+                                    captchaToken = turnstile.getResponse(turnstileWidget);
+                                    if (!captchaToken) {
+                                        // Show error if CAPTCHA not completed
+                                        const captchaError = document.getElementById('turnstile-error');
+                                        const errorText = document.getElementById('turnstile-error-text');
+                                        if (captchaError && errorText) {
+                                            errorText.textContent = 'অনুগ্রহ করে CAPTCHA সম্পন্ন করুন';
+                                            captchaError.style.display = 'block';
+                                        }
+                                        throw new Error('CAPTCHA not completed');
+                                    }
+                                } catch (error) {
+                                    // Handle Turnstile-specific errors
+                                    const captchaError = document.getElementById('turnstile-error');
+                                    const errorText = document.getElementById('turnstile-error-text');
+                                    if (captchaError && errorText) {
+                                        if (error.message && error.message.includes('Turnstile')) {
+                                            errorText.textContent = 'CAPTCHA ত্রুটি। পৃষ্ঠাটি রিফ্রেশ করুন এবং আবার চেষ্টা করুন।';
+                                        } else {
+                                            errorText.textContent = 'অনুগ্রহ করে CAPTCHA সম্পন্ন করুন';
+                                        }
+                                        captchaError.style.display = 'block';
+                                    }
+                                    throw new Error('CAPTCHA verification required');
+                                }
+                            }
+
                             const laravelFormData = {
                                 fullName: formData.name,
                                 email: formData.email,
@@ -444,6 +603,11 @@
                                 location: formData.location,
                                 productType: formData.productType
                             };
+                            
+                            // Add CAPTCHA token if available
+                            if (captchaToken) {
+                                laravelFormData['cf-turnstile-response'] = captchaToken;
+                            }
 
                             // Get CSRF token from meta tag or form
                             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
@@ -486,7 +650,23 @@
                                     
                                     // Display Laravel validation errors
                                     if (errorData.errors) {
+                                        // Handle CAPTCHA errors
+                                        if (errorData.errors.captcha) {
+                                            const captchaError = document.getElementById('turnstile-error');
+                                            if (captchaError) {
+                                                captchaError.style.display = 'block';
+                                                captchaError.innerHTML = '<small>' + errorData.errors.captcha[0] + '</small>';
+                                            }
+                                            // Reset Turnstile widget
+                                            const turnstileWidget = document.getElementById('turnstile-widget');
+                                            if (turnstileWidget && typeof turnstile !== 'undefined') {
+                                                turnstile.reset(turnstileWidget);
+                                            }
+                                        }
+                                        
                                         Object.keys(errorData.errors).forEach(function(field) {
+                                            if (field === 'captcha') return; // Already handled above
+                                            
                                             const fieldName = field === 'fullName' ? 'fullName' : 
                                                              field === 'phoneNumber' ? 'phoneNumber' : 
                                                              field === 'fullAddress' ? 'fullAddress' : field;
@@ -609,6 +789,9 @@
                         const successHTML = formatSuccessHTML(successMessages);
                         const contactFooter = formatContactFooter();
                         
+                        // Play success sound notification
+                        playNotificationSound();
+                        
                         await showSuccessAlert(
                             'অর্ডার সফল!',
                             successHTML,
@@ -618,6 +801,18 @@
                         // Reset form on success
                         form.reset();
                         updateOrderSummary();
+                        
+                        // Reset CAPTCHA widget
+                        const turnstileWidget = document.getElementById('turnstile-widget');
+                        if (turnstileWidget && typeof turnstile !== 'undefined') {
+                            turnstile.reset(turnstileWidget);
+                        }
+                        
+                        // Hide CAPTCHA error
+                        const captchaError = document.getElementById('turnstile-error');
+                        if (captchaError) {
+                            captchaError.style.display = 'none';
+                        }
                         
                     } catch (error) {
                         console.error('Form submission error:', error);

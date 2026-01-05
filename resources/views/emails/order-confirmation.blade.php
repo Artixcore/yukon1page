@@ -49,7 +49,7 @@
         </div>
         <div class="footer">
             <p>Thank you,<br>Yukon Lifestyle Team</p>
-            <p>📞 01924492356 | 📧 artixcore@gmail.com</p>
+            <p>📞 01924492356 | 📧 yukonlifestyle06@gmail.com</p>
         </div>
     </div>
 </body>

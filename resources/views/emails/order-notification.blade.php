@@ -55,6 +55,12 @@
             <p><strong>Order Details:</strong></p>
             <div class="order-details">
                 <table>
+                    @if(isset($orderData['order_id']) && $orderData['order_id'])
+                    <tr>
+                        <td><strong>Order ID:</strong></td>
+                        <td>#{{ $orderData['order_id'] }}</td>
+                    </tr>
+                    @endif
                     <tr>
                         <td><strong>Package:</strong></td>
                         <td>{{ $orderData['product'] }}</td>

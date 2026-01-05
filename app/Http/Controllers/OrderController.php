@@ -6,6 +6,7 @@ use App\Mail\OrderConfirmation;
 use App\Mail\OrderNotification;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
@@ -13,10 +14,93 @@ use Illuminate\Support\Facades\Validator;
 class OrderController extends Controller
 {
     /**
+     * Verify Cloudflare Turnstile CAPTCHA token.
+     */
+    private function verifyTurnstile($token, $ip = null)
+    {
+        $siteKey = config('turnstile.site_key');
+        $secretKey = config('turnstile.secret_key');
+
+        // Skip validation if Turnstile is not configured
+        if (empty($siteKey) || empty($secretKey)) {
+            return ['success' => true, 'message' => 'Turnstile not configured'];
+        }
+
+        if (empty($token)) {
+            return [
+                'success' => false,
+                'message' => 'CAPTCHA token is missing',
+                'error_codes' => ['missing-input-response']
+            ];
+        }
+
+        try {
+            $clientIp = $ip ?? $this->getClientIp(request());
+            
+            $response = Http::asForm()->post(config('turnstile.verify_url'), [
+                'secret' => $secretKey,
+                'response' => $token,
+                'remoteip' => $clientIp,
+            ]);
+
+            $result = $response->json();
+
+            if (!$result || !isset($result['success'])) {
+                return [
+                    'success' => false,
+                    'message' => 'Invalid response from CAPTCHA service',
+                    'error_codes' => ['invalid-response']
+                ];
+            }
+
+            return [
+                'success' => $result['success'],
+                'message' => $result['success'] ? 'CAPTCHA verified' : 'CAPTCHA verification failed',
+                'error_codes' => $result['error-codes'] ?? []
+            ];
+        } catch (\Exception $e) {
+            Log::error('Turnstile verification error: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'CAPTCHA verification service unavailable',
+                'error_codes' => ['service-error']
+            ];
+        }
+    }
+
+    /**
+     * Get client IP address.
+     */
+    private function getClientIp($request)
+    {
+        return $request->ip() ?? 
+               $request->header('CF-Connecting-IP') ?? 
+               $request->header('X-Forwarded-For') ?? 
+               $request->header('X-Real-IP') ?? 
+               '0.0.0.0';
+    }
+
+    /**
      * Store a newly created order in storage.
      */
     public function store(Request $request)
     {
+        // Verify CAPTCHA if Turnstile is configured
+        if (config('turnstile.site_key') && config('turnstile.secret_key')) {
+            $captchaToken = $request->input('cf-turnstile-response');
+            $captchaVerification = $this->verifyTurnstile($captchaToken, $this->getClientIp($request));
+
+            if (!$captchaVerification['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'CAPTCHA verification failed',
+                    'errors' => [
+                        'captcha' => ['অনুগ্রহ করে CAPTCHA সম্পন্ন করুন। দয়া করে পৃষ্ঠাটি রিফ্রেশ করুন এবং আবার চেষ্টা করুন।']
+                    ]
+                ], 422);
+            }
+        }
+
         $validator = Validator::make($request->all(), [
             'fullName' => 'required|string|min:2|max:255',
             'email' => 'required|email|max:255',
@@ -99,20 +183,52 @@ class OrderController extends Controller
             'total' => $total,
             'order_date' => now()->format('Y-m-d H:i:s'),
             'ip_address' => $request->ip(),
+            'order_id' => $orderId, // Include order ID if available
         ];
 
-        // Send notification email to business (don't break if it fails)
+        $emailStatus = [
+            'seller_notification' => false,
+            'customer_confirmation' => false,
+        ];
+
+        // Send notification email to seller (yukonlifestyle06@gmail.com)
+        // This email is critical - send even if database save failed
         try {
             Mail::to('yukonlifestyle06@gmail.com')->send(new OrderNotification($orderData));
+            $emailStatus['seller_notification'] = true;
+            Log::info('Order notification email sent to seller', [
+                'to' => 'yukonlifestyle06@gmail.com',
+                'order_id' => $orderId,
+                'customer' => $request->fullName
+            ]);
         } catch (\Exception $e) {
-            Log::error('Failed to send order notification email: ' . $e->getMessage());
+            Log::error('Failed to send order notification email to seller', [
+                'to' => 'yukonlifestyle06@gmail.com',
+                'error' => $e->getMessage(),
+                'order_id' => $orderId,
+                'customer' => $request->fullName,
+                'trace' => $e->getTraceAsString()
+            ]);
         }
 
-        // Send confirmation email to customer (don't break if it fails)
+        // Send confirmation email to customer
+        // This email is critical - send even if database save failed
         try {
             Mail::to($request->email)->send(new OrderConfirmation($orderData));
+            $emailStatus['customer_confirmation'] = true;
+            Log::info('Order confirmation email sent to customer', [
+                'to' => $request->email,
+                'order_id' => $orderId,
+                'customer' => $request->fullName
+            ]);
         } catch (\Exception $e) {
-            Log::error('Failed to send order confirmation email: ' . $e->getMessage());
+            Log::error('Failed to send order confirmation email to customer', [
+                'to' => $request->email,
+                'error' => $e->getMessage(),
+                'order_id' => $orderId,
+                'customer' => $request->fullName,
+                'trace' => $e->getTraceAsString()
+            ]);
         }
 
         // Return success even if database failed (graceful degradation)
