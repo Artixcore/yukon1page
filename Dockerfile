@@ -54,15 +54,15 @@ RUN mkdir -p /var/www/html/storage/framework/{cache,sessions,views} \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache
 
-# Run composer scripts and optimize Laravel (commands may fail if .env is not set, which is OK)
-RUN composer dump-autoload --optimize --classmap-authoritative || true \
-    && php artisan package:discover --ansi || true \
-    && php artisan config:cache || true \
-    && php artisan route:cache || true \
-    && php artisan view:cache || true
+# Optimize composer autoloader (this doesn't require .env)
+RUN composer dump-autoload --optimize --classmap-authoritative || true
 
 # Expose port 80 for HTTP
 EXPOSE 80
+
+# Health check endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost/health || exit 1
 
 # Use custom entrypoint to start both nginx and PHP-FPM
 ENTRYPOINT ["docker-entrypoint.sh"]

@@ -21,9 +21,18 @@ services:
         condition: service_started
     environment:
       - DB_HOST=db
+      - DB_PORT=3306
       - DB_DATABASE=${DB_DATABASE:-yukon_lifestyle}
       - DB_USERNAME=${DB_USERNAME:-root}
       - DB_PASSWORD=${DB_PASSWORD:-root}
+      - APP_ENV=${APP_ENV:-production}
+      - APP_DEBUG=${APP_DEBUG:-false}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health.php || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   # Nginx Service
   nginx:
@@ -39,7 +48,14 @@ services:
     networks:
       - yukon-network
     depends_on:
-      - app
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # MySQL Database Service
   db:
@@ -73,6 +89,12 @@ services:
       - yukon-network
     volumes:
       - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 networks:
   yukon-network:

@@ -18,10 +18,10 @@ services:
       timeout_seconds: 100
     
     health_check:
-      http_path: /
-      initial_delay_seconds: 10
-      period_seconds: 10
-      timeout_seconds: 5
+      http_path: /health
+      initial_delay_seconds: 40
+      period_seconds: 30
+      timeout_seconds: 10
       success_threshold: 1
       failure_threshold: 3
     
@@ -48,6 +48,10 @@ services:
       - scope: RUN_TIME
         type: SECRET
         value: DB_PASSWORD
+      - key: DB_PORT
+        value: "3306"
+      - key: DB_TIMEOUT
+        value: "30"
       - scope: RUN_TIME
         type: SECRET
         value: MAIL_MAILER
@@ -63,9 +67,19 @@ services:
       - scope: RUN_TIME
         type: SECRET
         value: MAIL_PASSWORD
+      - key: MAIL_TIMEOUT
+        value: "30"
+      - key: MAIL_ENCRYPTION
+        value: "tls"
+      - key: MAIL_FROM_ADDRESS
+        value: "noreply@yukonlifestyle.com"
+      - key: MAIL_FROM_NAME
+        value: "Yukon Lifestyle"
       - scope: RUN_TIME
         type: SECRET
         value: TURNSTILE_SITE_KEY
       - scope: RUN_TIME
         type: SECRET
         value: TURNSTILE_SECRET_KEY
+      - key: APP_URL
+        value: "https://tshirt.yukonlifestyle.com"
