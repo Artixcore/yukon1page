@@ -21,6 +21,12 @@ RUN apt-get update && apt-get install -y \
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Copy composer files first for better layer caching
+COPY composer.json composer.lock ./
+
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-scripts
+
 # Copy application files
 COPY . /var/www/html
 
@@ -33,9 +39,12 @@ RUN mkdir -p /var/www/html/storage/framework/{cache,sessions,views} \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache
 
-# Install PHP dependencies (will be done in docker-compose for development)
-# For production, uncomment the line below:
-# RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+# Run composer scripts and optimize Laravel (commands may fail if .env is not set, which is OK)
+RUN composer dump-autoload --optimize --classmap-authoritative || true \
+    && php artisan package:discover --ansi || true \
+    && php artisan config:cache || true \
+    && php artisan route:cache || true \
+    && php artisan view:cache || true
 
 # Expose port 9000 for PHP-FPM
 EXPOSE 9000
