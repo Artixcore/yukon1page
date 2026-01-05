@@ -1,10 +1,10 @@
-# Dockerfile for Laravel Application (PHP-FPM)
+# Dockerfile for Laravel Application (PHP-FPM + Nginx)
 FROM php:8.2-fpm
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Install system dependencies
+# Install system dependencies including nginx
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -15,11 +15,23 @@ RUN apt-get update && apt-get install -y \
     unzip \
     libzip-dev \
     libicu-dev \
+    nginx \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip intl opcache \
-    && docker-php-ext-enable opcache
+    && docker-php-ext-enable opcache \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy PHP-FPM pool configuration
 COPY php/www.conf /usr/local/etc/php-fpm.d/www.conf
+
+# Copy nginx configuration
+COPY nginx/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Remove default nginx site if it exists
+RUN rm -f /etc/nginx/sites-enabled/default
+
+# Copy startup script
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -49,8 +61,8 @@ RUN composer dump-autoload --optimize --classmap-authoritative || true \
     && php artisan route:cache || true \
     && php artisan view:cache || true
 
-# Expose port 9000 for PHP-FPM
-EXPOSE 9000
+# Expose port 80 for HTTP
+EXPOSE 80
 
-# Start PHP-FPM
-CMD ["php-fpm"]
+# Use custom entrypoint to start both nginx and PHP-FPM
+ENTRYPOINT ["docker-entrypoint.sh"]

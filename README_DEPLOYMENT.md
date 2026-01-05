@@ -100,7 +100,113 @@ docker-compose exec db mysql -u root -p
 # OR: docker compose exec db mysql -u root -p
 ```
 
-## Option 2: Using setup.sh (Bare Metal Ubuntu 22.04)
+## Option 2: DigitalOcean App Platform (Recommended for Production)
+
+### Prerequisites
+- DigitalOcean account
+- GitHub repository with your code
+- Database (DigitalOcean Managed Database or external)
+
+### Quick Start
+
+1. **Prepare your repository**
+   - Ensure `.do/app.yaml` is committed to your repository
+   - Ensure `Dockerfile` is in the root directory
+   - Ensure all environment variables are documented
+
+2. **Create App on DigitalOcean**
+   - Go to DigitalOcean App Platform
+   - Click "Create App"
+   - Connect your GitHub repository
+   - Select the branch to deploy (usually `main`)
+
+3. **Configure App Settings**
+   - DigitalOcean will detect the `.do/app.yaml` file automatically
+   - Or configure manually:
+     - **Build Command**: (auto-detected from Dockerfile)
+     - **Run Command**: (auto-detected from Dockerfile)
+     - **HTTP Port**: 80
+     - **HTTP Request Timeout**: 100 seconds
+
+4. **Set Environment Variables**
+   In DigitalOcean App Platform dashboard, add these environment variables:
+   - `APP_NAME`
+   - `APP_ENV=production`
+   - `APP_DEBUG=false`
+   - `APP_KEY` (generate with `php artisan key:generate`)
+   - `APP_URL` (your app URL)
+   - `DB_CONNECTION=mysql`
+   - `DB_HOST` (your database host)
+   - `DB_PORT=3306`
+   - `DB_DATABASE`
+   - `DB_USERNAME`
+   - `DB_PASSWORD`
+   - `MAIL_MAILER`
+   - `MAIL_HOST`
+   - `MAIL_PORT`
+   - `MAIL_USERNAME`
+   - `MAIL_PASSWORD`
+   - `MAIL_ENCRYPTION`
+   - `MAIL_FROM_ADDRESS`
+   - `MAIL_FROM_NAME`
+   - `TURNSTILE_SITE_KEY`
+   - `TURNSTILE_SECRET_KEY`
+
+5. **Configure Database**
+   - Use DigitalOcean Managed Database (recommended)
+   - Or connect to external database
+   - Ensure database is accessible from App Platform
+
+6. **Deploy**
+   - Click "Create Resources" or "Deploy"
+   - Wait for build to complete
+   - Check build logs for any errors
+
+7. **Run Migrations**
+   After first deployment, run migrations:
+   ```bash
+   # Using DigitalOcean CLI (doctl)
+   doctl apps create-deployment <app-id> --force-rebuild
+   
+   # Or use one-time command component in app.yaml
+   ```
+
+8. **Verify Deployment**
+   - Check app logs in DigitalOcean dashboard
+   - Visit your app URL
+   - Test admin panel: `https://your-app-url/admin/login`
+
+### Important Notes for DigitalOcean App Platform
+
+- **HTTP Timeout**: Configured to 100 seconds in `.do/app.yaml`
+- **Port**: App must listen on port 80 (configured in Dockerfile)
+- **Health Checks**: Configured in `.do/app.yaml` to check root path
+- **Scaling**: Adjust `instance_count` and `instance_size_slug` in `.do/app.yaml`
+- **Environment Variables**: Set as secrets in DigitalOcean dashboard for security
+
+### Troubleshooting DigitalOcean App Platform
+
+- **504 Gateway Timeout**: 
+  - Verify `http_requests.timeout_seconds: 100` in `.do/app.yaml`
+  - Check Cloudflare timeout settings (should be 100s or higher)
+  - Review app logs for slow queries or operations
+  
+- **Build Failures**:
+  - Check Dockerfile syntax
+  - Verify all required files are in repository
+  - Check build logs in DigitalOcean dashboard
+  
+- **Database Connection Errors**:
+  - Verify database credentials in environment variables
+  - Ensure database allows connections from App Platform IPs
+  - Check database firewall settings
+  
+- **Nginx/PHP-FPM Not Starting**:
+  - Check app logs in DigitalOcean dashboard
+  - Verify `docker-entrypoint.sh` has execute permissions
+  - Ensure nginx configuration is correct
+
+## Option 3: Using setup.sh (Bare Metal Ubuntu 22.04)
 
 ### Prerequisites
 - Ubuntu 22.04 Server
@@ -265,10 +371,12 @@ For more control, use Cloudflare Workers to set custom timeout values for specif
 
 ### 504 Gateway Timeout Errors
 - **Cloudflare timeout**: Ensure Cloudflare timeout is set to at least 100 seconds (see Cloudflare Timeout Configuration section)
+- **DigitalOcean App Platform**: Verify `http_requests.timeout_seconds: 100` in `.do/app.yaml`
 - **Server timeouts**: Verify nginx and PHP-FPM timeout settings match Cloudflare timeout
 - **Database queries**: Check for slow database queries in logs
 - **Email sending**: Verify mail service is responding quickly
 - **Check logs**: Review `storage/logs/laravel.log` and nginx error logs for specific timeout causes
+- **DigitalOcean logs**: Check app logs in DigitalOcean dashboard for timeout-related errors
 
 ## Support
 

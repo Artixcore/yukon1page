@@ -1,0 +1,71 @@
+name: yukon-lifestyle
+region: nyc
+
+services:
+  - name: web
+    # GitHub configuration - update with your repository details
+    github:
+      repo: https://github.com/Artixcore/yukon1page.git
+      branch: main
+      deploy_on_push: true
+    
+    dockerfile_path: Dockerfile
+    
+    http_port: 80
+    
+    # HTTP timeout set to 100 seconds to match Cloudflare and application timeouts
+    http_requests:
+      timeout_seconds: 100
+    
+    health_check:
+      http_path: /
+      initial_delay_seconds: 10
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+    
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    
+    envs:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - scope: RUN_TIME
+        type: SECRET
+        value: APP_KEY
+      - scope: RUN_TIME
+        type: SECRET
+        value: DB_HOST
+      - scope: RUN_TIME
+        type: SECRET
+        value: DB_DATABASE
+      - scope: RUN_TIME
+        type: SECRET
+        value: DB_USERNAME
+      - scope: RUN_TIME
+        type: SECRET
+        value: DB_PASSWORD
+      - scope: RUN_TIME
+        type: SECRET
+        value: MAIL_MAILER
+      - scope: RUN_TIME
+        type: SECRET
+        value: MAIL_HOST
+      - scope: RUN_TIME
+        type: SECRET
+        value: MAIL_PORT
+      - scope: RUN_TIME
+        type: SECRET
+        value: MAIL_USERNAME
+      - scope: RUN_TIME
+        type: SECRET
+        value: MAIL_PASSWORD
+      - scope: RUN_TIME
+        type: SECRET
+        value: TURNSTILE_SITE_KEY
+      - scope: RUN_TIME
+        type: SECRET
+        value: TURNSTILE_SECRET_KEY
