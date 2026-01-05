@@ -27,8 +27,11 @@ COPY php/www.conf /usr/local/etc/php-fpm.d/www.conf
 # Copy nginx configuration
 COPY nginx/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Remove default nginx site if it exists
-RUN rm -f /etc/nginx/sites-enabled/default
+# Remove default nginx site if it exists and create temp directories
+RUN rm -f /etc/nginx/sites-enabled/default \
+    && mkdir -p /var/cache/nginx/client_temp \
+    && mkdir -p /var/log/nginx \
+    && chown -R www-data:www-data /var/cache/nginx /var/log/nginx
 
 # Copy startup script
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
