@@ -20,8 +20,11 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+            'timeout' => env('DB_TIMEOUT', 5),
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::ATTR_TIMEOUT => 5,
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             ]) : [],
         ],
     ],

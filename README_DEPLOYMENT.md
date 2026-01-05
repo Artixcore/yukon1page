@@ -202,6 +202,39 @@ Key environment variables to configure in `.env`:
 - `TURNSTILE_SIZE` - Widget size (normal, compact)
 - `TURNSTILE_LANGUAGE` - Widget language (auto, bn, etc.)
 
+## Cloudflare Timeout Configuration
+
+To prevent 504 Gateway Timeout errors, configure Cloudflare timeout settings:
+
+### Option 1: Using Cloudflare Dashboard (Recommended)
+
+1. **Log in to Cloudflare Dashboard**
+2. **Select your domain** (tshirt.yukonlifestyle.com)
+3. **Go to Speed → Optimization**
+4. **Set "Origin Max HTTP Keep Alive Timeout"** to **100 seconds** or higher
+5. **Save changes**
+
+### Option 2: Using Cloudflare Page Rules
+
+1. **Go to Rules → Page Rules**
+2. **Create a new page rule** for your domain or specific routes
+3. **Add setting**: "Origin Max HTTP Keep Alive Timeout"
+4. **Set value**: 100 seconds
+5. **Save and deploy**
+
+### Option 3: Using Cloudflare Workers (Advanced)
+
+For more control, use Cloudflare Workers to set custom timeout values for specific routes.
+
+### Important Notes
+
+- The application is configured with **100-second timeouts** to match Cloudflare's default
+- If you increase Cloudflare timeout beyond 100s, also update:
+  - `nginx/nginx.conf`: `fastcgi_read_timeout`, `fastcgi_send_timeout`
+  - `php/local.ini`: `max_execution_time`
+  - `php/www.conf`: `request_terminate_timeout`
+- Monitor your application logs after changes to ensure timeouts are resolved
+
 ## Production Checklist
 
 - [ ] Set `APP_ENV=production`
@@ -211,6 +244,7 @@ Key environment variables to configure in `.env`:
 - [ ] Set up SSL certificate
 - [ ] Configure mail service
 - [ ] Set up Cloudflare Turnstile keys
+- [ ] Configure Cloudflare timeout settings (see above)
 - [ ] Configure firewall rules
 - [ ] Set up automated backups
 - [ ] Configure log rotation
@@ -228,6 +262,13 @@ Key environment variables to configure in `.env`:
 - **MySQL root password**: Default is `root`, change in .env
 - **Nginx not starting**: Check configuration with `nginx -t`
 - **PHP-FPM not working**: Check service status `systemctl status php8.1-fpm`
+
+### 504 Gateway Timeout Errors
+- **Cloudflare timeout**: Ensure Cloudflare timeout is set to at least 100 seconds (see Cloudflare Timeout Configuration section)
+- **Server timeouts**: Verify nginx and PHP-FPM timeout settings match Cloudflare timeout
+- **Database queries**: Check for slow database queries in logs
+- **Email sending**: Verify mail service is responding quickly
+- **Check logs**: Review `storage/logs/laravel.log` and nginx error logs for specific timeout causes
 
 ## Support
 
